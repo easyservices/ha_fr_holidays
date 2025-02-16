@@ -155,7 +155,7 @@ class SchoolHolidays(Entity):
     def extra_state_attributes(self) -> dict[str, str]:
         """Return the extra state attributes."""
         return {
-            "API_URL": self.api_url,
+            "API_URL": self.api_fr,
         }
 
     """
@@ -243,7 +243,6 @@ class SchoolHolidays(Entity):
         self._summary_name = "Non encore mis à jour"
 
         for extract_data in self._school_db:
-            # print(extract_data)
             date_pattern = "%Y-%m-%dT%H:%M:%S%z"
             start = datetime.strptime(
                 str(extract_data["start_date"]), date_pattern
@@ -258,7 +257,6 @@ class SchoolHolidays(Entity):
                     + str(extract_data["zones"])
                 )
                 self._vacation_status = "True"
-                self._summary_name = "En vacances scolaires"
                 break
 
         if self._vacation_status == "False":
@@ -267,7 +265,7 @@ class SchoolHolidays(Entity):
         # we are either saturday or sunday
         if now.isoweekday() > 5:
             if self._vacation_status == "True":
-                self._summary_name = "En week-end et vacances scolaires"
+                self._summary_name = "En week-end, " +  self._summary_name
             else:
                 self._summary_name = "En week-end mais pas en vacances scolaires"
             self._weekend_status = "True"
