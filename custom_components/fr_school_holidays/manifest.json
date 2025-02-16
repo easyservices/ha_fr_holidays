@@ -1,0 +1,18 @@
+{
+  "domain": "fr_school_holidays",
+  "description": "Home Assistant sensors for French School Vacation Times as a custom component",
+  "name": "French School Vacation Times",
+  "codeowners": [
+    "@easyservices"
+  ],
+  "dependencies": [],
+  "config_flow": false,
+  "integration_type": "helper",
+  "documentation": "https://github.com/easyservices/ha_fr_holidays",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/easyservices/ha_fr_holidays/issues",
+  "requirements": [
+    "aiofiles>=24.1.0"
+  ],
+  "version": "1.0.0"
+}
