@@ -6,7 +6,7 @@
     "@easyservices"
   ],
   "dependencies": [],
-  "config_flow": false,
+  "config_flow": true,
   "integration_type": "helper",
   "documentation": "https://github.com/easyservices/ha_fr_holidays",
   "iot_class": "local_polling",
@@ -14,5 +14,5 @@
   "requirements": [
     "aiofiles>=24.1.0"
   ],
-  "version": "1.0.0"
+  "version": "1.2.0"
 }

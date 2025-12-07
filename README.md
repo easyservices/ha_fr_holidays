@@ -1,120 +1,96 @@
-Version française *(English version below)*
+# Vacances scolaires France (custom component Home Assistant)
 
-# Capteurs pour Home Assistant pour déterminer si le jour actuel est une période de vacances scolaires (custom components)
+## En français (see english version below)
+Ce composant crée des capteurs Home Assistant indiquant si l'on est en vacances scolaires pour une zone donnée (A, B, C ou DOM) en s'appuyant sur l'open data du ministère de l'Éducation nationale (`data.education.gouv.fr`).
 
-## Récupérer les données des vacances scolaires françaises sous Home Assistant
+### Fonctionnement
+- Télécharge chaque année le calendrier via l'URL API configurable (par défaut la requête v2 avec `year` et `zone` en paramètres) et met le résultat en cache dans `fr_school_data_<annee>.json`.
+- Supprime automatiquement le cache de l'année précédente et recharge les données si l'année scolaire change.
+- Calcule les états en local selon le fuseau horaire choisi (défaut `Europe/Paris`).
+- Expose des attributs communs : `API_URL`, `timezone`, `next_holiday_start`, `next_holiday_end`, `days_until_next_holiday`.
+
+### Capteurs créés
+- `sensor.fr_school_is_vacation_time` (booléen) : `on` pendant toute période de vacances pour la zone.
+- `sensor.fr_school_is_weekend_time` (booléen) : `on` du samedi au dimanche, y compris pendant les vacances.
+- `sensor.fr_school_is_school_day` (booléen) : `on` uniquement les jours de classe (ni week-end ni vacances).
+- `sensor.fr_school_summary` (texte) : résumé en français (vacances en cours, week-end, prochaine période, etc.).
+
+### Configuration via l'interface (recommandé)
+1. Paramètres → Appareils & services → Ajouter une intégration → rechercher « Vacances scolaires ». 
+2. Renseigner `vacation_zone` (ex. `B` pour la zone `B`), laisser l'URL API par défaut ou la personnaliser, choisir les capteurs à créer (`resources`), définir si besoin le `timezone` (ex. `Europe/Paris`).
+
+### Gestion des versions
+- 1.2.0: Amélioration des codes erreur et du cache.
+
+### Exemple YAML (mode héritage)
+```yaml
+sensor:
+  - platform: fr_school_holidays
+    vacation_zone: "Zone B"
+    api_url: "https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?limit=99&lang=fr&timezone=Europe%2FParis&refine=start_date:\"{year}\"&refine=zones:\"{zone}\"&refine=population:\"Élèves\"&refine=population:\"-\""
+    resources:
+      - is_vacation_time
+      - is_weekend_time
+      - is_school_day
+      - summary
+    timezone: "Europe/Paris"
+```
+
+### Notes
+- Dépendance : `aiofiles` (voir `manifest.json`).
+- Si l'API est inaccessible, le composant continue d'utiliser le cache de l'année en cours.
+- L'intégration est de type « helper » et effectue un polling local, sans équipements supplémentaires.
 
 *Remerciements : Un grand merci à [rt400](https://github.com/rt400/School-Vacation/commits?author=rt400) pour le code original.*
 
-Ce capteur personnalisé détermine si le jour actuel est une période de vacances scolaires dans divers territoires français.
-
-## Guide d'Installation
-
-### Prérequis
-
-Vous pouvez le déployer manuellement comme suit :
-
-- Créez un répertoire nommé `fr_school_holidays` dans le dossier de configuration de votre installation Home Assistant sous `<dossier installation ha>/config/custom_components/`. Si `custom_components` n'existe pas, créez-le également.
-- Copiez tous les fichiers du dossier `custom/components/fr_school_holidays` de l'archive ZIP téléchargée depuis le dépôt Git actuel vers le répertoire `fr_school_holidays` que vous venez de créer (dans le dossier de configuration de Home Assistant).
-- Ajoutez la configuration suivante dans votre fichier `sensor.yaml` ou directement dans le fichier `config.yaml` de Home Assistant (selon vos préférences pour organiser vos capteurs dans des fichiers de configuration distincts ou tous dans le `config.yaml` de Home Assistant) :
-
-```python
-sensor:
-  - platform: fr_school_holidays
-    # Zones supportées : "Zone A", "Zone B", "Zone C", "Corse", "Guadeloupe", "Guyane", "Martinique", "Mayotte", "Nouvelle Calédonie", "Polynésie", "Réunion", "Saint Pierre et Miquelon", "Wallis et Futuna"
-    vacation_zone: "Zone B"
-    api_url: 'https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?limit=99&lang=fr&timezone=Europe%2FParis&refine=start_date:"{year}"&refine=zones:"{zone}"&refine=population:"Élèves"&refine=population:"-"'
-    resources:
-    - is_vacation_time
-    - is_weekend_time
-    - summary
-```
-
-### Détails des Entités
-- **is_vacation_time** : Retourne `True` pendant les vacances et `False` autrement.
-- **summary** : Fournit une description de la période de vacances actuelle.
-- **is_weekend_time** : Retourne `True` pendant le week-end et `False` autrement.
-
-## Utilisation avec capteur `input_boolean`
-
-Ce composant est particulièrement utile lorsqu'il est combiné avec un `input_boolean` dans Home Assistant, permettant des automatisations qui réagissent dynamiquement aux périodes de vacances scolaires.
-
-### Exemple d'Automatisation :
-```python
-- id: Set_School_Mode_Off
-  alias: Désactiver le Mode École
-  trigger:
-  - platform: state
-    entity_id: sensor.fr_school_is_vacation_time
-    to: 'True'
-  condition: []
-  action:
-  - data:
-      entity_id: input_boolean.school_auto
-    service: input_boolean.turn_on
-```
-
-## Licence
-Sous licence GNU General Public License v2.0 (GPL 2.0).
+### Licence
+License GNU General Public License v2.0 (GPL 2.0).
 
 ---
-English version *(Version française au-dessus)*
+## In English (see french version upper)
 
+### What it does
+- Creates Home Assistant sensors that tell whether the chosen French zone (A, B, C or DOM) is on school holidays, using the Education Ministry open-data API.
 
-# French School Vacation Sensor as a Custom Component for Home Assistant
+### How it works
+- Fetches the yearly calendar from a configurable API URL (default v2 query with `{year}` and `{zone}` placeholders) and caches it in `fr_school_data_<year>.json`.
+- Automatically drops last year's cache and refreshes when the school year changes.
+- Computes states locally with the selected timezone (default `Europe/Paris`).
+- Exposes shared attributes: `API_URL`, `timezone`, `next_holiday_start`, `next_holiday_end`, `days_until_next_holiday`.
 
-## Retrieve French School Vacation Data in Home Assistant
+### Entities
+- `sensor.fr_school_is_vacation_time` (boolean): `on` during any holiday period for the zone.
+- `sensor.fr_school_is_weekend_time` (boolean): `on` from Saturday to Sunday, including holidays.
+- `sensor.fr_school_is_school_day` (boolean): `on` only on school days (not weekend, not holiday).
+- `sensor.fr_school_summary` (text): human-readable French summary (current holidays, weekend, next period, etc.).
 
-*Acknowledgment: Special thanks to [rt400](https://github.com/rt400/School-Vacation/commits?author=rt400) for the original codebase.*
+### UI setup (recommended)
+1. Settings → Devices & Services → Add Integration → search “French School Holidays”.
+2. Provide `vacation_zone` (e.g. `B` for `B Zone`), keep or edit the API URL, pick the sensors (`resources`), set `timezone` (e.g. `Europe/Paris`) if needed.
 
-This custom sensor determines whether the current day is a school holiday in various French territories.
+### Changelogs
+- 1.2.0: Cache and http errors codes improved.
 
-## Installation Guide
-
-### Prerequisites
-
-You can deploy it manually as followed:
-
-- Create a directory named `fr_school_holidays` within your Home Assistant configuration folder under `<ha installation folder>/config/custom_components/`. If `custom_components` does not exist, create it as well.
-- Copy all the files from the `custom/components/fr_school_holidays` folder from the zip you downloaded from the current git repo to the `fr_school_holidays` directory you just created (within your Home Assistant configuration folder).
-- Include the following configuration in your `sensor.yaml` file or directly into the config.yaml file from Home Assistant (depending on your preferences to have multiple configuration files for each sensor type or all the sensors in the config.yaml from Home Assistant):
-
-```python
+### YAML example (legacy)
+```yaml
 sensor:
   - platform: fr_school_holidays
-    # Supported zones: "Zone A", "Zone B", "Zone C", "Corse", "Guadeloupe", "Guyane", "Martinique", "Mayotte", "Nouvelle Calédonie", "Polynésie", "Réunion", "Saint Pierre et Miquelon", "Wallis et Futuna"
     vacation_zone: "Zone B"
-    api_url: 'https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?limit=99&lang=fr&timezone=Europe%2FParis&refine=start_date:"{year}"&refine=zones:"{zone}"&refine=population:"Élèves"&refine=population:"-"'
+    api_url: "https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?limit=99&lang=fr&timezone=Europe%2FParis&refine=start_date:\"{year}\"&refine=zones:\"{zone}\"&refine=population:\"Élèves\"&refine=population:\"-\""
     resources:
-    - is_vacation_time
-    - is_weekend_time
-    - summary
+      - is_vacation_time
+      - is_weekend_time
+      - is_school_day
+      - summary
+    timezone: "Europe/Paris"
 ```
 
-### Entity Details
-- **is_vacation_time**: Returns `True` during vacation periods and `False` otherwise.
-- **summary**: Provides descriptive information about the current vacation period.
-- **is_weekend_time**: Returns `True` during weekend period and `False` otherwise. 
+### Notes
+- Dependency: `aiofiles` (see `manifest.json`).
+- If the API is unreachable, the component keeps using the current-year cache.
+- Integration type is “helper” with local polling; no extra hardware.
 
-## Usage with a binary sensor
+*Special thanks : Thank you to [rt400](https://github.com/rt400/School-Vacation/commits?author=rt400) for the original version.*
 
-This component is particularly useful when combined with an `input_boolean` in Home Assistant, enabling automations that respond dynamically to school vacation periods.
-
-### Example Automation:
-```python
-- id: Set_School_Mode_Off
-  alias: Set School Mode Off
-  trigger:
-  - platform: state
-    entity_id: sensor.fr_school_is_vacation_time
-    to: 'True'
-  condition: []
-  action:
-  - data:
-      entity_id: input_boolean.school_auto
-    service: input_boolean.turn_on
-```
-  
-## License
+### License
 Licensed under GNU General Public License v2.0 (GPL 2.0).
-
